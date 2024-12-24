@@ -78,6 +78,7 @@ export const getStaticProps = async () => {
       allBooks,
       recoBooks,
     },
+    // revalidate: 3, // ISG 적용, 초 단위로 재생성
   };
 };
 
