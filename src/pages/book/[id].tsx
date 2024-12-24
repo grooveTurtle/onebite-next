@@ -1,6 +1,7 @@
-import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
+import { GetStaticPropsContext, InferGetStaticPropsType } from "next";
 import style from "./[id].module.css";
 import fetchOneBook from "@/lib/fetch-one-book";
+import { useRouter } from "next/router";
 
 // const mockData = {
 //   id: 1,
@@ -14,12 +15,85 @@ import fetchOneBook from "@/lib/fetch-one-book";
 //     "https://shopping-phinf.pstatic.net/main_3888828/38888282618.20230913071643.jpg",
 // };
 
-export const getServerSideProps = async (
-  context: GetServerSidePropsContext
-) => {
+// SSR
+// export const getServerSideProps = async (
+//   context: GetServerSidePropsContext
+// ) => {
+//   // 해당 페이지는 애초에 id가 무조건 있어야 하므로, 타입단언(!)를 사용해도 문제없다.
+//   const id = context.params!.id; // 기본적으로 string을 반환.
+//   const book = await fetchOneBook(Number(id));
+
+//   return {
+//     props: {
+//       book,
+//     },
+//   };
+// };
+
+// export default function Page({
+//   book,
+// }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+//   if (!book) {
+//     return "문제가 발생했습니다. 다시 시도해주세요";
+//   }
+
+//   const { title, subTitle, description, author, publisher, coverImgUrl } = book;
+
+//   return (
+//     <div className={style.container}>
+//       <div
+//         style={{ backgroundImage: `url('${coverImgUrl}')` }}
+//         className={style.cover_img_container}
+//       >
+//         <img src={coverImgUrl} />
+//       </div>
+//       <div className={style.title}>{title}</div>
+//       <div className={style.subTitle}>{subTitle}</div>
+//       <div className={style.author}>
+//         {author} | {publisher}
+//       </div>
+//       <div className={style.description}>{description}</div>
+//     </div>
+//   );
+// }
+
+// SSG
+export const getStaticPaths = () => {
+  return {
+    paths: [
+      { params: { id: "1" } },
+      { params: { id: "2" } },
+      { params: { id: "3" } },
+    ],
+
+    // fallback 처리가 false일시 허용되지 않는 params.id로 접근시 not found 페이지로 이동
+    // fallback: false,
+
+    // blocking 옵션 처리시, 빌드 타임에 생성 되지 않은 페이지에 대해서는 SSR 방식으로 동작하여 페이지를 생성한다.
+    // 생성 된 이후에는 정적 페이지로 동작한다.
+    // 당연한 소리겠지만, 페이지 크기가 클 수록 정적 파일을 생성하는 코스트가 크기 때문에 사용에 유의해야한다.
+    // fallback: "blocking",
+
+    // fallback이 true일 경우, 빌드 타임에 생성되지 않은 페이지에 대해서는 404 페이지로 이동하지 않고,
+    // 클라이언트 사이드에서 fetch하여 페이지를 생성한다.
+    // 즉, props가 없는 페이지를 우선 반환하여 페이지가 렌더링 되고, 이후에 props만 따로 반환하여 데이터가 있는 페이지로 전환된다.
+    // blocking 때와 마찬가지로, 미리 선언된 path가 아닌경우 정적 파일을 생성한다.
+    // 아래의 예시라고 하면 getStaticProps가 나중에 계산 된다고 생각하면 된다.
+    fallback: true,
+  };
+};
+
+export const getStaticProps = async (context: GetStaticPropsContext) => {
   // 해당 페이지는 애초에 id가 무조건 있어야 하므로, 타입단언(!)를 사용해도 문제없다.
   const id = context.params!.id; // 기본적으로 string을 반환.
   const book = await fetchOneBook(Number(id));
+
+  if (!book) {
+    // book 데이터가 없을 경우, 404 페이지로 이동
+    return {
+      notFound: true,
+    };
+  }
 
   return {
     props: {
@@ -30,13 +104,19 @@ export const getServerSideProps = async (
 
 export default function Page({
   book,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+}: InferGetStaticPropsType<typeof getStaticProps>) {
+  const router = useRouter();
+
+  // fallback blocking이나 true인경우, fallback 상태에 빠져있는 경우에 로딩 처리 등을 표시하기 위함.
+  if (router.isFallback) {
+    return "로딩중입니다!";
+  }
+
   if (!book) {
     return "문제가 발생했습니다. 다시 시도해주세요";
   }
 
-  const { id, title, subTitle, description, author, publisher, coverImgUrl } =
-    book;
+  const { title, subTitle, description, author, publisher, coverImgUrl } = book;
 
   return (
     <div className={style.container}>
