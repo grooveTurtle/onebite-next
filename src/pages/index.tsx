@@ -1,7 +1,7 @@
 // CSS Module 이용
 import SearchableLayout from "@/components/searchable-layout";
 import style from "./index.module.css";
-import { ReactNode, useEffect } from "react";
+import { ReactNode } from "react";
 // import books from "@/mock/books.json";
 import BookItem from "@/components/book-item";
 import { InferGetStaticPropsType } from "next";
